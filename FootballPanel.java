@@ -1,43 +1,68 @@
 import java.awt.*;
-import java.awt.event.*;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import javax.swing.*;
+
+/**
+* Copyright 2014-2019 by Michael Wu
+*
+* This program uses Java graphics, timers, and listener packages to create a GUI game. 
+* Upon running the program, a separate gui window will open where the game will be played. 
+* Since it has a GUI, anyone running the program must download and run it outside of github.
+*/
 
 public class FootballPanel extends JPanel{
 
-	FootballDisplayPanel displayPanel = new FootballDisplayPanel();
+	FootballDisplayPanel displayPanel = new FootballDisplayPanel();  // Creates GUI window
+	
+	// Initial coordinates for the football. Coordinates are in pixels.
 	private int footballX = 233;
 	private double footballY = 224;
-	private int WOY = 217;                                 //Y coord of the wide receivers
-	private int DBY = 150;
-	private int RBX = 265;     
-	private int RBY = 305;
-	private int LBX = 305;
-	private double gain;
-	JPanel buttonPanel = new JPanel();
-	PassTimerListener PTList = new PassTimerListener();
-	lineTimeListener LTList = new lineTimeListener();
-	RunTimeListener RTList = new RunTimeListener();
+	
+	// Initial coordinates for the players. Depending on what play type and result, different animations will take place.
+	// Some players only move in one direction, so those only need one variable for location.  
+	
+	private int WRY = 217;  // Y-coordinate for the wide receivers. They use the same y-coordinate                              
+	private int DBY = 150;  // Y-coordinate for the defensive backs
+	private int RBX = 265;  // X-coordinate for the running back  
+	private int RBY = 305;  // Y-coordinate for the running back
+	private int LBX = 305;  // X-coordinate for the linebacker	
+	
+	JPanel buttonPanel = new JPanel();  // Provides a panel for the buttons the user will use to control the game
+	
+	// Creates timers to control the game animations. 
+	// Each type of animation needs its own timer. 
+	
+	PassTimerListener PTList = new PassTimerListener(); // Used for passing plays
 	Timer passTimer = new Timer(20, PTList);
-	Timer lineTimer = new Timer(20, LTList);
+	
+	RunTimeListener RTList = new RunTimeListener(); // Used for running plays
 	Timer runTimer = new Timer (20,RTList);
-	private int timer = 0;
-	boolean plusX = false;
-	private double distance = 35;
-	private int plays = 0;
-	private int lineX = 249;
-	private int difference = 0;
-	private boolean passBall;
-	private boolean spacePressed;
-	private boolean runBall;
-	private boolean win;
-	private boolean lose;
+	
+	lineTimeListener LTList = new lineTimeListener(); // Used during each play to determine success. 
+	Timer lineTimer = new Timer(20, LTList);
+	
+	private int timer = 0; // Used to keep track of how long each animation has run. 
+	
+	// Line variables
+	boolean plusX = false; // Used during the line animations to keep track of which direction the line should move. 
+	private int lineX = 249; // X-coordinate of the line
+	private int difference = 0; // Difference between the target and the user line
+	private boolean spacePressed; // True once the user has pressed the space bar
+	
+	// Game variables
+	private double distance = 35; // Current yard line (or how far they still have to go.) 
+	private double gain;  // Yards gained on the most recent play
+	private int plays = 0; // How many plays have been run
+	
+	private boolean passBall; // True if the user chooses to pass the ball 
+	private boolean runBall; // True if the user chooses to run the ball
+
+	private boolean win; // True if the user has won the game
+	private boolean lose; // True if the user has lost the game
 	private int space;
 	boolean hike = true;
 	boolean pass = false;
@@ -48,7 +73,7 @@ public class FootballPanel extends JPanel{
 	JButton runButton = new JButton("Run Ball");
 	JButton playAgain = new JButton("New Game");
 	JButton difficultyButton = new JButton("Easy Mode");
-	double n = Math.random();
+	double n = Math.random(); // Used to decide randomly whether ball is passed left or right. 
 
 
 	public static void main(String[] args) {
@@ -94,18 +119,18 @@ public class FootballPanel extends JPanel{
 		g.fillRect(LBX, 175,35,35);
 		g.fillRect(25,DBY,35,35);               //Left DB
 		g.fillRect(440,DBY,35,35);              //Right DB
-		g.fillRect(185,50,35,35);               //Left SS   
-		g.fillRect(265,60,35,35);               //Right SS
+		g.fillRect(185,50,35,35);               //Left S   
+		g.fillRect(265,60,35,35);               //Right S
 		g.setColor(Color.RED);
 		g.fillRect(225,217,35,35);              //Center
-		g.fillRect(265,225,35,35);              //Right inside LB
-		g.fillRect(185,225,35,35);              //Left inside LB   
-		g.fillRect(145,245,35,35);              //Left outside LB
-		g.fillRect(305,245,35,35);              //Right outside LB
+		g.fillRect(265,225,35,35);              //Right guard
+		g.fillRect(185,225,35,35);              //Left guard   
+		g.fillRect(145,245,35,35);              //Left tackle
+		g.fillRect(305,245,35,35);              //Right tackle
 		g.fillRect(225,320,35,35);              //QB
 		g.fillRect(RBX,RBY,35,35);              //RB
-		g.fillRect(20,WOY,35,35);               //Left wide-out
-		g.fillRect(445,WOY,35,35);              //Right wide-out
+		g.fillRect(20,WRY,35,35);               //Left wide-out
+		g.fillRect(445,WRY,35,35);              //Right wide-out
 		g.setColor(Color.BLACK);
 		g.fillOval(footballX,(int)footballY,19,33);              //Football
 		g.setColor(Color.BLACK);
@@ -160,12 +185,12 @@ public class FootballPanel extends JPanel{
 		g.setColor(Color.WHITE);
 		g.fillRect(100, 100, 300, 350);
 		g.setColor(Color.BLACK);
-		g.drawString("It took you " + plays + " plays to score. ", 110, 170);
-		for (int i = 0; i < 10; i++){
-			g.drawString("You Win!", 110, 200 + 15 * i);
-		}
-		g.drawString("Want to play again?   :) ", 110, 370);
-		g.drawString("Maybe try playing on hard mode.", 110, 390);
+		
+		g.drawString("You win!", 110, 170);
+		g.drawString("It took you " + plays + " plays to score. ", 110, 190);
+		
+		g.drawString("You can play again or change difficulties", 110, 370);
+		g.drawString("using the buttons at the bottom.", 110, 390);
 		difficultyButton.setEnabled(true);
 	}
 
@@ -174,17 +199,19 @@ public class FootballPanel extends JPanel{
 		playAgain.setEnabled(true);
 		passButton.setEnabled(false);
 		runButton.setEnabled(false);
-		g.setColor(Color.RED);
-		g.fillRect(0, 0, 500, 540);
 		g.setColor(Color.WHITE);
-		g.drawString("Wow. You managed to lose. " , 10 , 100);
-		g.drawString("How did you even do that? You would have to lose 65 yards to lose the game." , 10 , 130);
-		g.drawString("My only hope is that you wanted to see what would happen if you lose. " , 10 , 160);
-		g.drawString("Please tell me that's the case... " , 10 , 190);
-		g.drawString("Well anyways feel free to re-start the game and play for realz." , 10 , 220);
+		g.fillRect(0, 0, 500, 540);
+		g.setColor(Color.BLACK);
+		g.drawString("You lose. " , 10 , 100);
+		g.drawString("Care to try again?" , 10 , 120);
 		difficultyButton.setEnabled(true);
 	}
 
+	
+	/** 
+	 * Resets all variables and buttons in preparation for a new game. 
+	 * Function is called when user presses the "New game" button. 
+	 */
 	void playAgain (Graphics g){
 		distance = 35;
 		plays = 0;
@@ -205,18 +232,22 @@ public class FootballPanel extends JPanel{
 		g.setColor(Color.WHITE);
 		g.fillRect(0,0,500,537);
 		g.setColor(Color.BLACK);
-		g.drawString("Welcome to 'How Fast Can You Score?'  :) ", 10,20);
-		g.drawString("In this football based game, you start with the ball", 10,50);
-		g.drawString("at your opponent's 35 yard-line. The goal of this game", 10,80);
-		g.drawString("Is to see how quickly you can score a touchdown. ", 10,110);
-		g.drawString("You are assessed based on how many plays it takes to score. ", 10,140);
-		g.drawString("For each play, you can choose to run the ball or to pass the ball.", 10,170);
-		g.drawString("Passing the ball can result in more yardage, ", 10,200);
-		g.drawString("but the potential to lose yards is greater. ", 10,230);
-		g.drawString("Once you have selected a play, a meter will be displayed", 10,260);
-		g.drawString("to determine the outcome of the play.", 10,290);
-		g.drawString("Please select your difficulty level before the first play.", 10,320);
-		g.drawString("When you're ready, click on the new game button. Good luck!", 10,350);
+		g.drawString("Welcome to 'How Fast Can You Score?'  :) ", 15,60);
+		g.drawString("In this football based game, you start with the ball", 15,80);
+		g.drawString("at your opponent's 35 yard-line. The goal of this game", 15,100);
+		g.drawString("is to see how quickly you can score a touchdown. ", 15,120);
+		g.drawString("You are assessed based on how many plays it takes to score. ", 15,160);
+		g.drawString("For each play, you can choose to run the ball or to pass the ball.", 15,180);
+		g.drawString("Passing the ball can result in more yardage, ", 15,200);
+		g.drawString("but the potential to lose yards is also greater. ", 15,220);
+		g.drawString("Once you have selected a play, a meter will be displayed", 15,260);
+		g.drawString("to determine the outcome of the play.", 15,280);
+		g.drawString("A line will move across the screen, which you should", 15,300);
+		g.drawString("try to get in the target zone using the space bar.", 15,320);
+		
+		
+		g.drawString("Please select your difficulty level before the first play.", 15,360);
+		g.drawString("When you're ready, click on the new game button. Good luck!", 15,380);
 
 
 	}
@@ -293,7 +324,7 @@ public class FootballPanel extends JPanel{
 				footballX = 233;
 				footballY = 224;
 				DBY = 150;
-				WOY = 217; 
+				WRY = 217; 
 				RBX = 265; 
 				RBY = 305;
 				LBX = 305;
@@ -320,11 +351,11 @@ public class FootballPanel extends JPanel{
 					if ( footballY < 310 ){
 						footballY+=5;
 					}
-					if ( footballY >= 310 && WOY > 100){
-						WOY-=3;
+					if ( footballY >= 310 && WRY > 100){
+						WRY-=3;
 						DBY-=3;
 					}
-					if (WOY < 110){
+					if (WRY < 110){
 						footballY = footballY - 7;
 						if (n >= 0.50){
 							footballX-=2;
@@ -347,13 +378,13 @@ public class FootballPanel extends JPanel{
 						}
 					}
 					if ( pass == true && DBY > 50){
-						WOY-=2;
+						WRY-=2;
 						DBY-=2;
 					}
-					if (pass == true && DBY <= 50 && WOY < 250 && footballX > 35){
-						WOY += 2;
+					if (pass == true && DBY <= 50 && WRY < 250 && footballX > 35){
+						WRY += 2;
 					}
-					if (pass == true && WOY >= 250 && footballX > 25 && footballX < 455){
+					if (pass == true && WRY >= 250 && footballX > 25 && footballX < 455){
 						if (n > 0.5){
 							footballX -= 3;
 						}
@@ -384,7 +415,7 @@ public class FootballPanel extends JPanel{
 				footballX = 233;
 				footballY = 224;
 				DBY = 150;
-				WOY = 217; 
+				WRY = 217; 
 				passButton.setEnabled(true);
 				runButton.setEnabled(true);
 				timer = 0;
@@ -405,14 +436,14 @@ public class FootballPanel extends JPanel{
 			playAgain.setEnabled(true);
 			if (gain > 0){
 				if (timer == 0){	
-					if ( footballY < 310 && WOY > 100){
+					if ( footballY < 310 && WRY > 100){
 						footballY+=5;
 					}
-					if ( footballY >= 310 && WOY > 100){
-						WOY-=3;
+					if ( footballY >= 310 && WRY > 100){
+						WRY-=3;
 						DBY-=3;
 					}
-					if (WOY == 100 && footballX < 275){
+					if (WRY == 100 && footballX < 275){
 
 						footballX+=2;
 						footballY-=1;
@@ -439,14 +470,14 @@ public class FootballPanel extends JPanel{
 
 			if (gain < 0){
 				if (timer == 0){
-					if ( footballY < 310 && WOY > 100){
+					if ( footballY < 310 && WRY > 100){
 						footballY+=5;
 					}
-					if ( footballY >= 310 && WOY > 100){
-						WOY-=3;
+					if ( footballY >= 310 && WRY > 100){
+						WRY-=3;
 						DBY-=3;
 					}
-					if (WOY == 100 && footballX < 275){						
+					if (WRY == 100 && footballX < 275){						
 						footballX+=2;
 						footballY-=1;
 					}
@@ -475,11 +506,12 @@ public class FootballPanel extends JPanel{
 				footballX = 233;
 				footballY = 224;
 				DBY = 150;
-				WOY = 217; 
+				WRY = 217; 
 				RBX = 265; 
 				RBY = 305;
 				LBX = 305;
 				timer = 0;
+				
 				if (distance != 0){
 					repaint();
 				}
@@ -623,5 +655,5 @@ public class FootballPanel extends JPanel{
 			}
 		}
 	}
-}
+} // End of class FootballPanel
 
